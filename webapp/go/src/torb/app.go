@@ -45,7 +45,7 @@ type Event struct {
 type Sheets struct {
 	Total   int      `json:"total"`
 	Remains int      `json:"remains"`
-	Detail  []*Sheet `json:"detail,omitempty"`
+	Detail  []Sheet `json:"detail,omitempty"`
 	Price   int64    `json:"price"`
 }
 
@@ -234,14 +234,13 @@ func getEvent(eventID, loginUserID int64) (*Event, error) {
 	}
 
 	var sheets = getSheets()
-
-	for _, sheet := range(sheets) {
+	for _, sheet := range sheets {
 		event.Sheets[sheet.Rank].Price = event.Price + sheet.Price
 		event.Total++
 		event.Sheets[sheet.Rank].Total++
 		event.Remains++
 		event.Sheets[sheet.Rank].Remains++
-		event.Sheets[sheet.Rank].Detail = append(event.Sheets[sheet.Rank].Detail, &sheet)
+		event.Sheets[sheet.Rank].Detail = append(event.Sheets[sheet.Rank].Detail, sheet)
 	}
 
 	reservs, err := db.Query("SELECT * FROM reservations WHERE event_id = ? AND canceled_at IS NULL GROUP BY event_id, sheet_id HAVING reserved_at = MIN(reserved_at)", event.ID)
@@ -255,13 +254,13 @@ func getEvent(eventID, loginUserID int64) (*Event, error) {
 		if err := reservs.Scan(&reservation.ID, &reservation.EventID, &reservation.SheetID, &reservation.UserID, &reservation.ReservedAt, &reservation.CanceledAt); err != nil {
 			return nil, err
 		}
-		var sheet = sheets[reservation.SheetID]
+		var sheet = sheets[reservation.SheetID-1]
 		sheet.Mine = reservation.UserID == loginUserID
 		sheet.Reserved = true
 		sheet.ReservedAtUnix = reservation.ReservedAt.Unix()
 		event.Remains--
 		event.Sheets[sheet.Rank].Remains--
-		event.Sheets[sheet.Rank].Detail[reservation.SheetID-1] = &sheet
+		event.Sheets[sheet.Rank].Detail[sheet.Num-1] = sheet
 	}
 
 	return &event, nil
@@ -954,46 +953,46 @@ func resError(c echo.Context, e string, status int) error {
 
 
 func getSheets() []Sheet {
-	sheets := make([]Sheet, 1001, 1001)
+	sheets := make([]Sheet, 1000, 1000)
 	id := 1
 
-	for i := 1; i<50; i++ {
+	for i := 1; i<=50; i++ {
 		var sheet Sheet
 		sheet.ID = int64(id)
 		sheet.Price = 5000
 		sheet.Num = int64(i)
 		sheet.Rank = "S"
-		sheets[id] = sheet
+		sheets[id-1] = sheet
 		id += 1
 	}
 
-	for i := 1; i<150; i++ {
+	for i := 1; i<=150; i++ {
 		var sheet Sheet
 		sheet.ID = int64(id)
 		sheet.Price = 3000
 		sheet.Num = int64(i)
 		sheet.Rank = "A"
-		sheets[id] = sheet
+		sheets[id-1] = sheet
 		id += 1
 	}
 
-	for i := 1; i<300; i++ {
+	for i := 1; i<=300; i++ {
 		var sheet Sheet
 		sheet.ID = int64(id)
 		sheet.Price = 1000
 		sheet.Num = int64(i)
 		sheet.Rank = "B"
-		sheets[id] = sheet
+		sheets[id-1] = sheet
 		id += 1
 	}
 
-	for i := 1; i<300; i++ {
+	for i := 1; i<=500; i++ {
 		var sheet Sheet
 		sheet.ID = int64(id)
 		sheet.Price = 0
 		sheet.Num = int64(i)
 		sheet.Rank = "C"
-		sheets[id] = sheet
+		sheets[id-1] = sheet
 		id += 1
 	}
 	return sheets
