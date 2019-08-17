@@ -17,5 +17,5 @@ Vagrant.configure("2") do |config|
     vb.name = "isucon8-vagrant"
   end
 
-  #config.vm.synced_folder "./webapp", "/home/isucon/torb/webapp", owner: "isucon", group: "isucon"
+  config.vm.synced_folder "./webapp", "/home/isucon/torb/webapp", owner: "isucon", group: "isucon"
 end
