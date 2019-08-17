@@ -2,6 +2,7 @@ bin
 pkg
 /bench/vendor/src/
 /webapp/go/vendor/src/
+!webapp/go/vendor/manifest
 /webapp/go/vendor/
 /webapp/go/torb
 .perl-version
