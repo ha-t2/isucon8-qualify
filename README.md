@@ -1,3 +1,5 @@
+isucon頑張ろう
+
 # ISUCON8 予選問題
 
 * [予選レギュレーション](./doc/REGULATION.md)
