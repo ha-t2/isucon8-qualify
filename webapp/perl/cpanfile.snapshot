@@ -78,6 +78,14 @@ DISTRIBUTIONS
       Exporter 0
       ExtUtils::MakeMaker 6.64
       perl 5.008001
+  Cpanel-JSON-XS-4.12
+    pathname: R/RU/RURBAN/Cpanel-JSON-XS-4.12.tar.gz
+    provides:
+      Cpanel::JSON::XS 4.12
+      Cpanel::JSON::XS::Type undef
+    requirements:
+      ExtUtils::MakeMaker 0
+      Pod::Text 2.08
   DBD-mysql-4.046
     pathname: C/CA/CAPTTOFU/DBD-mysql-4.046.tar.gz
     provides:
@@ -1128,6 +1136,7 @@ DISTRIBUTIONS
       JSON::MaybeXS 1.004000
     requirements:
       Carp 0
+      Cpanel::JSON::XS 2.3310
       ExtUtils::MakeMaker 0
       JSON::PP 2.27300
       Scalar::Util 0
