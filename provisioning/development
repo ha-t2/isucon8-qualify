@@ -1,10 +1,10 @@
 [portal_web]
 # ポータルをデプロイするサーバ
-#default
 
 [bench]
 # ベンチマーカをデプロイするサーバ
 default
+
 [webapp1]
 # 競技用webappをデプロイするサーバ(1)
 default
