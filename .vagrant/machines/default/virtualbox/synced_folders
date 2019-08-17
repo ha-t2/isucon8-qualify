@@ -1,1 +1,0 @@
-{"virtualbox":{"/home/isucon/torb/webapp":{"owner":"isucon","group":"isucon","guestpath":"/home/isucon/torb/webapp","hostpath":"/Users/sotaro-maehara/develop/isucon/isucon8-qualify/webapp","disabled":false,"__vagrantfile":true},"/vagrant":{"guestpath":"/vagrant","hostpath":"/Users/sotaro-maehara/develop/isucon/isucon8-qualify","disabled":false,"__vagrantfile":true}}}
