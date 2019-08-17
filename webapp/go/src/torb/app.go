@@ -45,7 +45,7 @@ type Event struct {
 type Sheets struct {
 	Total   int      `json:"total"`
 	Remains int      `json:"remains"`
-	Detail  []*Sheet `json:"detail,omitempty"`
+	Detail  []Sheet `json:"detail,omitempty"`
 	Price   int64    `json:"price"`
 }
 
@@ -233,35 +233,34 @@ func getEvent(eventID, loginUserID int64) (*Event, error) {
 		"C": &Sheets{},
 	}
 
-	rows, err := db.Query("SELECT * FROM sheets ORDER BY `rank`, num")
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var sheet Sheet
-		if err := rows.Scan(&sheet.ID, &sheet.Rank, &sheet.Num, &sheet.Price); err != nil {
-			return nil, err
-		}
+	var sheets = getSheets()
+	for _, sheet := range sheets {
 		event.Sheets[sheet.Rank].Price = event.Price + sheet.Price
 		event.Total++
 		event.Sheets[sheet.Rank].Total++
+		event.Remains++
+		event.Sheets[sheet.Rank].Remains++
+		event.Sheets[sheet.Rank].Detail = append(event.Sheets[sheet.Rank].Detail, sheet)
+	}
 
+	reservs, err := db.Query("SELECT * FROM reservations WHERE event_id = ? AND canceled_at IS NULL GROUP BY event_id, sheet_id HAVING reserved_at = MIN(reserved_at)", event.ID)
+	if err != nil {
+		return nil, err
+	}
+	defer reservs.Close()
+
+	for reservs.Next() {
 		var reservation Reservation
-		err := db.QueryRow("SELECT * FROM reservations WHERE event_id = ? AND sheet_id = ? AND canceled_at IS NULL GROUP BY event_id, sheet_id HAVING reserved_at = MIN(reserved_at)", event.ID, sheet.ID).Scan(&reservation.ID, &reservation.EventID, &reservation.SheetID, &reservation.UserID, &reservation.ReservedAt, &reservation.CanceledAt)
-		if err == nil {
-			sheet.Mine = reservation.UserID == loginUserID
-			sheet.Reserved = true
-			sheet.ReservedAtUnix = reservation.ReservedAt.Unix()
-		} else if err == sql.ErrNoRows {
-			event.Remains++
-			event.Sheets[sheet.Rank].Remains++
-		} else {
+		if err := reservs.Scan(&reservation.ID, &reservation.EventID, &reservation.SheetID, &reservation.UserID, &reservation.ReservedAt, &reservation.CanceledAt); err != nil {
 			return nil, err
 		}
-
-		event.Sheets[sheet.Rank].Detail = append(event.Sheets[sheet.Rank].Detail, &sheet)
+		var sheet = sheets[reservation.SheetID-1]
+		sheet.Mine = reservation.UserID == loginUserID
+		sheet.Reserved = true
+		sheet.ReservedAtUnix = reservation.ReservedAt.Unix()
+		event.Remains--
+		event.Sheets[sheet.Rank].Remains--
+		event.Sheets[sheet.Rank].Detail[sheet.Num-1] = sheet
 	}
 
 	return &event, nil
@@ -950,4 +949,51 @@ func resError(c echo.Context, e string, status int) error {
 		status = 500
 	}
 	return c.JSON(status, map[string]string{"error": e})
+}
+
+
+func getSheets() []Sheet {
+	sheets := make([]Sheet, 1000, 1000)
+	id := 1
+
+	for i := 1; i<=50; i++ {
+		var sheet Sheet
+		sheet.ID = int64(id)
+		sheet.Price = 5000
+		sheet.Num = int64(i)
+		sheet.Rank = "S"
+		sheets[id-1] = sheet
+		id += 1
+	}
+
+	for i := 1; i<=150; i++ {
+		var sheet Sheet
+		sheet.ID = int64(id)
+		sheet.Price = 3000
+		sheet.Num = int64(i)
+		sheet.Rank = "A"
+		sheets[id-1] = sheet
+		id += 1
+	}
+
+	for i := 1; i<=300; i++ {
+		var sheet Sheet
+		sheet.ID = int64(id)
+		sheet.Price = 1000
+		sheet.Num = int64(i)
+		sheet.Rank = "B"
+		sheets[id-1] = sheet
+		id += 1
+	}
+
+	for i := 1; i<=500; i++ {
+		var sheet Sheet
+		sheet.ID = int64(id)
+		sheet.Price = 0
+		sheet.Num = int64(i)
+		sheet.Rank = "C"
+		sheets[id-1] = sheet
+		id += 1
+	}
+	return sheets
 }
