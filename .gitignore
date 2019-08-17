@@ -2,9 +2,12 @@ bin
 pkg
 /bench/vendor/src/
 /webapp/go/vendor/src/
+/webapp/go/vendor/
 /webapp/go/torb
 .perl-version
 .DS_store
 isucon8q-initial-dataset.sql.gz
 /bench/*.json
 /bench/*.log
+go.mod
+go.sum
