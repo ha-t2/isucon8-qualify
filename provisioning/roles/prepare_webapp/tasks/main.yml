@@ -79,13 +79,13 @@
 #    src: torb.ruby.service
 #    dest: /etc/systemd/system/torb.ruby.service
 
-- name: Install for torb.nodejs
-  become: yes
-  become_user: isucon
-  args:
-    chdir: /home/isucon/torb/webapp/nodejs
-  shell: |
-    bash -lc "/home/isucon/local/node/bin/npm install"
+#- name: Install for torb.nodejs
+#  become: yes
+#  become_user: isucon
+#  args:
+#    chdir: /home/isucon/torb/webapp/nodejs
+#  shell: |
+#    bash -lc "/home/isucon/local/node/bin/npm install"
 
 - name: Install for torb.go
   become: yes
