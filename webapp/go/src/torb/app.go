@@ -191,32 +191,81 @@ func getEvents(all bool) ([]*Event, error) {
 	}
 	defer tx.Commit()
 
-	rows, err := tx.Query("SELECT * FROM events ORDER BY id ASC")
+	rows, err := tx.Query("select e.*, r.* from events e left join reservations r on e.id = r.event_id where r.canceled_at IS NULL;")
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-
+	hash := map[int64]*Event{}
 	var events []*Event
 	for rows.Next() {
 		var event Event
-		if err := rows.Scan(&event.ID, &event.Title, &event.PublicFg, &event.ClosedFg, &event.Price); err != nil {
-			return nil, err
+		var reservation Reservation
+		if err := rows.Scan(&event.ID, &event.Title, &event.PublicFg, &event.ClosedFg, &event.Price, &reservation.ID, &reservation.EventID, &reservation.SheetID, &reservation.UserID, &reservation.ReservedAt, &reservation.CanceledAt); err != nil {
+			rows.Scan(&event.ID, &event.Title, &event.PublicFg, &event.ClosedFg, &event.Price)
 		}
 		if !all && !event.PublicFg {
 			continue
 		}
-		events = append(events, &event)
+		var sheets = getSheets()
+
+		if reservation.ID == 0 {
+			event.Sheets = map[string]*Sheets{
+				"S": &Sheets{},
+				"A": &Sheets{},
+				"B": &Sheets{},
+				"C": &Sheets{},
+			}
+			for _, sheet := range sheets {
+				event.Sheets[sheet.Rank].Price = event.Price + sheet.Price
+				event.Total++
+				event.Sheets[sheet.Rank].Total++
+				event.Remains++
+				event.Sheets[sheet.Rank].Remains++
+			}
+			hash[event.ID] = &event
+			continue
+		}
+
+
+		if e, ok := hash[event.ID]; ok {
+			var sheet = sheets[reservation.SheetID-1]
+			sheet.Mine = false
+			sheet.Reserved = true
+			sheet.ReservedAtUnix = reservation.ReservedAt.Unix()
+			e.Remains--
+			e.Sheets[sheet.Rank].Remains--
+			hash[e.ID] = e
+		} else {
+			event.Sheets = map[string]*Sheets{
+				"S": &Sheets{},
+				"A": &Sheets{},
+				"B": &Sheets{},
+				"C": &Sheets{},
+			}
+			for _, sheet := range sheets {
+				event.Sheets[sheet.Rank].Price = event.Price + sheet.Price
+				event.Total++
+				event.Sheets[sheet.Rank].Total++
+				event.Remains++
+				event.Sheets[sheet.Rank].Remains++
+			}
+			var sheet = sheets[reservation.SheetID-1]
+			sheet.Mine = false
+			sheet.Reserved = true
+			sheet.ReservedAtUnix = reservation.ReservedAt.Unix()
+			event.Remains--
+			event.Sheets[sheet.Rank].Remains--
+			hash[event.ID] = &event
+		}
 	}
-	for i, v := range events {
-		event, err := getEvent(v.ID, -1)
-		if err != nil {
-			return nil, err
-		}
-		for k := range event.Sheets {
-			event.Sheets[k].Detail = nil
-		}
-		events[i] = event
+	keys := make([]int, 0)
+	for k, _ := range hash {
+		keys = append(keys, int(k))
+	}
+	sort.Ints(keys)
+	for _, k := range keys {
+		events = append(events, hash[int64(k)])
 	}
 	return events, nil
 }
@@ -841,6 +890,7 @@ func main() {
 		return nil
 	}, adminLoginRequired)
 	e.GET("/admin/api/reports/events/:id/sales", func(c echo.Context) error {
+		time.Sleep(10 * time.Millisecond)
 		eventID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 		if err != nil {
 			return resError(c, "not_found", 404)
